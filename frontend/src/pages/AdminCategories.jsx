@@ -1,0 +1,117 @@
+import { useEffect, useState } from 'react';
+import api from '../services/api';
+
+function AdminCategories() {
+  const [categories, setCategories] = useState([]);
+  const [modalOuverte, setModalOuverte] = useState(false);
+  const [categorieEnEdition, setCategorieEnEdition] = useState(null);
+  const [form, setForm] = useState({ nom_cat: '', description_cat: '' });
+
+  const charger = () => {
+    api.get('categories/').then((res) => setCategories(res.data));
+  };
+
+  useEffect(() => { charger(); }, []);
+
+  const ouvrirCreation = () => {
+    setCategorieEnEdition(null);
+    setForm({ nom_cat: '', description_cat: '' });
+    setModalOuverte(true);
+  };
+
+  const ouvrirEdition = (categorie) => {
+    setCategorieEnEdition(categorie);
+    setForm({ nom_cat: categorie.nom_cat, description_cat: categorie.description_cat });
+    setModalOuverte(true);
+  };
+
+  const enregistrer = async (e) => {
+    e.preventDefault();
+    try {
+      if (categorieEnEdition) {
+        await api.put(`categories/${categorieEnEdition.id_cat}/`, form);
+      } else {
+        await api.post('categories/', form);
+      }
+      setModalOuverte(false);
+      charger();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const supprimer = async (id) => {
+    if (!confirm('Supprimer cette catégorie ?')) return;
+    try {
+      await api.delete(`categories/${id}/`);
+      charger();
+    } catch (err) {
+      alert('Impossible de supprimer (des produits y sont peut-être liés)');
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gestion des catégories</h1>
+        <button onClick={ouvrirCreation} className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
+          Nouvelle catégorie
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="p-3">Nom</th>
+              <th className="p-3">Description</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((c) => (
+              <tr key={c.id_cat} className="border-t border-gray-100">
+                <td className="p-3">{c.nom_cat}</td>
+                <td className="p-3">{c.description_cat}</td>
+                <td className="p-3 space-x-2">
+                  <button onClick={() => ouvrirEdition(c)} className="text-indigo-600 hover:underline">Modifier</button>
+                  <button onClick={() => supprimer(c.id_cat)} className="text-red-600 hover:underline">Supprimer</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modalOuverte && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setModalOuverte(false)}>
+          <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-4">{categorieEnEdition ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</h2>
+            <form onSubmit={enregistrer} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Nom</label>
+                <input required value={form.nom_cat} onChange={(e) => setForm({ ...form, nom_cat: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea value={form.description_cat} onChange={(e) => setForm({ ...form, description_cat: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setModalOuverte(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 py-2 rounded-md text-sm font-medium transition">
+                  Annuler
+                </button>
+                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AdminCategories;
