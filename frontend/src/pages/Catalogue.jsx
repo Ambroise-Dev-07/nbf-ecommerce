@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { isAuthenticated } from '../services/auth';
 import api from '../services/api';
 import { formaterPrix } from '../utils/format';
+import { extraireErreur } from '../utils/erreur';
 
 function Catalogue() {
   const [produits, setProduits] = useState([]);
@@ -15,12 +16,40 @@ function Catalogue() {
   const [produitSelectionne, setProduitSelectionne] = useState(null);
   const [message, setMessage] = useState('');
   const [enAjout, setEnAjout] = useState(null);
+  const [panier, setPanier] = useState(null);
+  const [quantitesLocales, setQuantitesLocales] = useState({});
+  const minuteries = useRef({});
+  const modificationsEnAttente = useRef({});
   const navigate = useNavigate();
+
+  const chargerPanier = async () => {
+    if (!isAuthenticated()) return;
+    try {
+      const res = await api.get('paniers/');
+      setPanier(res.data[0] || null);
+    } catch {
+      // Panier indisponible : le catalogue reste utilisable.
+    }
+  };
 
   useEffect(() => {
     api.get('produits/').then((res) => setProduits(res.data));
     api.get('categories/').then((res) => setCategories(res.data));
     api.get('marques/').then((res) => setMarques(res.data));
+    chargerPanier();
+
+    const temporisateurs = minuteries.current;
+    const enAttente = modificationsEnAttente.current;
+    return () => {
+      Object.values(temporisateurs).forEach(clearTimeout);
+      // Envoie les dernières quantités modifiées si l'utilisateur quitte
+      // la page avant la fin du délai d'attente.
+      Object.entries(enAttente).forEach(([id, quantite]) => {
+        api.patch(`lignes-panier/${id}/`, { quantite_ligne_pan: quantite })
+          .catch(() => {});
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -36,16 +65,66 @@ function Catalogue() {
     return matchCat && matchMarque && matchRecherche;
   });
 
+  const ligneDuProduit = (produitId) =>
+    panier?.lignes?.find((ligne) => ligne.produit.id_prod === produitId) || null;
+
+  const quantiteAffichee = (produit) =>
+    ligneDuProduit(produit.id_prod)?.quantite_ligne_pan
+      ?? quantitesLocales[produit.id_prod]
+      ?? 1;
+
+  const changerQuantite = (produit, valeur) => {
+    const max = Math.max(produit.stock_prod, 1);
+    const quantite = Math.min(Math.max(Number(valeur) || 1, 1), max);
+    const ligne = ligneDuProduit(produit.id_prod);
+
+    if (!ligne) {
+      // Produit absent du panier : on mémorise la quantité à ajouter.
+      setQuantitesLocales((prev) => ({ ...prev, [produit.id_prod]: quantite }));
+      return;
+    }
+
+    // Produit déjà au panier : la quantité est modifiée directement.
+    setPanier((prev) => ({
+      ...prev,
+      lignes: prev.lignes.map((l) =>
+        l.id_ligne_pan === ligne.id_ligne_pan
+          ? { ...l, quantite_ligne_pan: quantite }
+          : l
+      ),
+    }));
+
+    modificationsEnAttente.current[ligne.id_ligne_pan] = quantite;
+
+    clearTimeout(minuteries.current[ligne.id_ligne_pan]);
+    minuteries.current[ligne.id_ligne_pan] = setTimeout(async () => {
+      try {
+        await api.patch(`lignes-panier/${ligne.id_ligne_pan}/`, {
+          quantite_ligne_pan: quantite,
+        });
+        delete modificationsEnAttente.current[ligne.id_ligne_pan];
+        setMessage(`${produit.nom_prod} : quantité mise à jour (${quantite})`);
+      } catch (err) {
+        delete modificationsEnAttente.current[ligne.id_ligne_pan];
+        setMessage(
+          extraireErreur(err, `Quantité refusée pour ${produit.nom_prod}.`)
+        );
+        chargerPanier();
+      }
+    }, 500);
+  };
+
   const ajouterAuPanier = async (produit, e) => {
     e.stopPropagation();
     if (!isAuthenticated()) {
       navigate('/login');
       return;
     }
+
+    const quantite = quantiteAffichee(produit);
     setEnAjout(produit.id_prod);
     try {
-      const panierRes = await api.get('paniers/');
-      let panierId = panierRes.data[0]?.id_pan;
+      let panierId = panier?.id_pan;
       if (!panierId) {
         const nouveauPanier = await api.post('paniers/');
         panierId = nouveauPanier.data.id_pan;
@@ -53,14 +132,15 @@ function Catalogue() {
       await api.post('lignes-panier/', {
         panier: panierId,
         produit_id: produit.id_prod,
-        quantite_ligne_pan: 1,
+        quantite_ligne_pan: quantite,
       });
-      setMessage(`${produit.nom_prod} ajouté au panier`);
+      setMessage(`${produit.nom_prod} × ${quantite} ajouté au panier`);
+      setQuantitesLocales((prev) => ({ ...prev, [produit.id_prod]: 1 }));
+      await chargerPanier();
     } catch (err) {
-      const detail = err.response?.data?.non_field_errors?.[0]
-        || err.response?.data?.detail
-        || `Impossible d'ajouter ${produit.nom_prod} au panier`;
-      setMessage(detail);
+      setMessage(
+        extraireErreur(err, `Impossible d'ajouter ${produit.nom_prod} au panier.`)
+      );
     } finally {
       setEnAjout(null);
     }
@@ -107,40 +187,97 @@ function Catalogue() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {produitsFiltres.map((produit) => (
-          <div
-            key={produit.id_prod}
-            onClick={() => setProduitSelectionne(produit)}
-            className="bg-white rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
-          >
-            {produit.image_prod && (
-              <div className="h-44 overflow-hidden bg-gray-100">
-                <img src={produit.image_prod} alt={produit.nom_prod} className="w-full h-full object-cover block" />
+        {produitsFiltres.map((produit) => {
+          const quantite = quantiteAffichee(produit);
+          const auPanier = Boolean(ligneDuProduit(produit.id_prod));
+          const max = Math.max(produit.stock_prod, 1);
+
+          return (
+            <div
+              key={produit.id_prod}
+              onClick={() => setProduitSelectionne(produit)}
+              className="bg-white rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
+            >
+              {produit.image_prod && (
+                <div className="h-44 overflow-hidden bg-gray-100">
+                  <img
+                    src={produit.image_prod}
+                    alt={produit.nom_prod}
+                    className="w-full h-full object-cover block"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
+              )}
+              <div className="p-4 flex-1 flex flex-col">
+                <h3 className="font-semibold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  {produit.nom_prod}
+                </h3>
+                <p className="text-lg font-bold text-amber-600 mb-2">{formaterPrix(produit.prix_prod)}</p>
+                <span
+                  className={`text-xs px-2 py-1 rounded-full w-fit mb-3 ${
+                    produit.stock_prod > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {produit.stock_prod > 0 ? `Stock: ${produit.stock_prod}` : 'Rupture'}
+                </span>
+
+                <div
+                  className="flex items-center justify-between mb-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-xs text-gray-500">
+                    {auPanier ? 'Quantité au panier' : 'Quantité'}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Diminuer la quantité de ${produit.nom_prod}`}
+                      onClick={() => changerQuantite(produit, quantite - 1)}
+                      disabled={quantite <= 1 || produit.stock_prod === 0}
+                      className="p-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={max}
+                      value={quantite}
+                      onChange={(e) => changerQuantite(produit, e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={produit.stock_prod === 0}
+                      className="w-12 px-1 py-1 text-center text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-50 disabled:text-gray-400"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Augmenter la quantité de ${produit.nom_prod}`}
+                      onClick={() => changerQuantite(produit, quantite + 1)}
+                      disabled={quantite >= max || produit.stock_prod === 0}
+                      className="p-1.5 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {auPanier ? (
+                  <div className="mt-auto flex items-center justify-center gap-2 bg-green-50 text-green-700 py-2 rounded-md text-sm font-medium">
+                    <Check size={16} /> Au panier
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => ajouterAuPanier(produit, e)}
+                    disabled={produit.stock_prod === 0 || enAjout === produit.id_prod}
+                    className="mt-auto flex items-center justify-center gap-2 bg-[#1E1B2E] text-white py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                  >
+                    <ShoppingCart size={16} />
+                    {enAjout === produit.id_prod ? 'Ajout...' : 'Ajouter'}
+                  </button>
+                )}
               </div>
-            )}
-            <div className="p-4 flex-1 flex flex-col">
-              <h3 className="font-semibold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                {produit.nom_prod}
-              </h3>
-              <p className="text-lg font-bold text-amber-600 mb-2">{formaterPrix(produit.prix_prod)}</p>
-              <span
-                className={`text-xs px-2 py-1 rounded-full w-fit mb-3 ${
-                  produit.stock_prod > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}
-              >
-                {produit.stock_prod > 0 ? `Stock: ${produit.stock_prod}` : 'Rupture'}
-              </span>
-              <button
-                onClick={(e) => ajouterAuPanier(produit, e)}
-                disabled={produit.stock_prod === 0 || enAjout === produit.id_prod}
-                className="mt-auto flex items-center justify-center gap-2 bg-[#1E1B2E] text-white py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-              >
-                <ShoppingCart size={16} />
-                {enAjout === produit.id_prod ? 'Ajout...' : 'Ajouter'}
-              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {produitSelectionne && (
