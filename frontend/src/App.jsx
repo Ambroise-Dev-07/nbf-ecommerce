@@ -13,6 +13,7 @@ import AdminCategories from './pages/AdminCategories';
 import AdminMarques from './pages/AdminMarques';
 import AdminCommandes from './pages/AdminCommandes';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminEtats from './pages/AdminEtats';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/admin/marques" element={<AdminRoute><AdminMarques /></AdminRoute>} />
             <Route path="/admin/commandes" element={<AdminRoute><AdminCommandes /></AdminRoute>} />
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/etats" element={<AdminRoute><AdminEtats /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

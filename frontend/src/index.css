@@ -1,1 +1,62 @@
 @import "tailwindcss";
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  main {
+    background: #fff !important;
+  }
+
+  .etat-page {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .etat-page .shadow-sm,
+  .etat-page .rounded-xl {
+    box-shadow: none !important;
+  }
+
+  .etat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+
+  .etat-table th,
+  .etat-table td {
+    border: 1px solid #9ca3af;
+    padding: 4px 6px;
+    text-align: left;
+  }
+
+  .etat-table th.text-right,
+  .etat-table td.text-right {
+    text-align: right;
+  }
+
+  .etat-table thead {
+    display: table-header-group;
+  }
+
+  .etat-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .etat-badge {
+    display: inline-block;
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    font-size: 9pt;
+  }
+}

@@ -2,7 +2,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { isAuthenticated, logout } from '../services/auth';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '../services/auth';
-import { Home, ShoppingCart, ClipboardList, LayoutDashboard, Package, Tag, Award, LayoutList, LogOut, Menu, X } from 'lucide-react';
+import { Home, ShoppingCart, ClipboardList, LayoutDashboard, Package, Tag, Award, LayoutList, FileText, LogOut, Menu, X } from 'lucide-react';
 
 
 
@@ -55,6 +55,7 @@ function Header() {
     { path: '/admin/categories', label: 'Catégories', icon: Tag },
     { path: '/admin/marques', label: 'Marques', icon: Award },
     { path: '/admin/commandes', label: 'Gestion', icon: LayoutList },
+    { path: '/admin/etats', label: 'États', icon: FileText },
   ];
 
   const tousLesItems = [...navItems, ...(estAdmin ? adminItems : [])];
@@ -75,7 +76,7 @@ function Header() {
   };
 
   return (
-    <div className="bg-[#1E1B2E] px-4 sm:px-6 py-3.5">
+    <div className="bg-[#1E1B2E] px-4 sm:px-6 py-3.5 no-print">
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-[#1E1B2E] font-bold text-xs">

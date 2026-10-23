@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Upload as UploadIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FileText, Printer, Upload as UploadIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { formaterPrix } from '../utils/format';
 import { extraireErreur } from '../utils/erreur';
+
+const SEUIL_STOCK_FAIBLE = 5;
 
 function AdminProduits() {
   const [produits, setProduits] = useState([]);
@@ -12,7 +15,10 @@ function AdminProduits() {
   const [produitEnEdition, setProduitEnEdition] = useState(null);
   const [fichierImage, setFichierImage] = useState(null);
   const [erreur, setErreur] = useState('');
+  const [stockLocal, setStockLocal] = useState({});
   const [form, setForm] = useState({ nom_prod: '', description_prod: '', prix_prod: '', stock_prod: '', categorie_id: '', marque_id: '' });
+  const minuteriesStock = useRef({});
+  const stockEnAttente = useRef({});
 
   const charger = () => {
     api.get('produits/').then((res) => setProduits(res.data));
@@ -20,7 +26,74 @@ function AdminProduits() {
     api.get('marques/').then((res) => setMarques(res.data));
   };
 
-  useEffect(() => { charger(); }, []);
+  useEffect(() => {
+    charger();
+
+    const temporisateurs = minuteriesStock.current;
+    const enAttente = stockEnAttente.current;
+    return () => {
+      Object.values(temporisateurs).forEach(clearTimeout);
+      // Enregistre les stocks modifiés si l'on quitte la page avant la fin du délai.
+      Object.entries(enAttente).forEach(([id, stock]) => {
+        api.patch(`produits/${id}/`, { stock_prod: stock }).catch(() => {});
+      });
+    };
+  }, []);
+
+  const valeurStock = (produit) => stockLocal[produit.id_prod] ?? produit.stock_prod;
+
+  const oublierStockLocal = (id) => {
+    setStockLocal((prev) => {
+      const suivant = { ...prev };
+      delete suivant[id];
+      return suivant;
+    });
+  };
+
+  const appliquerStock = (produit, valeur) => {
+    const stock = Math.max(Math.trunc(Number(valeur)) || 0, 0);
+
+    setStockLocal((prev) => ({ ...prev, [produit.id_prod]: stock }));
+    stockEnAttente.current[produit.id_prod] = stock;
+
+    clearTimeout(minuteriesStock.current[produit.id_prod]);
+    minuteriesStock.current[produit.id_prod] = setTimeout(async () => {
+      try {
+        const res = await api.patch(`produits/${produit.id_prod}/`, { stock_prod: stock });
+        delete stockEnAttente.current[produit.id_prod];
+        setProduits((prev) =>
+          prev.map((p) =>
+            p.id_prod === produit.id_prod ? { ...p, stock_prod: res.data.stock_prod } : p
+          )
+        );
+        oublierStockLocal(produit.id_prod);
+        setErreur('');
+      } catch (err) {
+        delete stockEnAttente.current[produit.id_prod];
+        oublierStockLocal(produit.id_prod);
+        setErreur(extraireErreur(err, `Impossible de mettre à jour le stock de ${produit.nom_prod}.`));
+      }
+    }, 600);
+  };
+
+  const annulerStockEnAttente = (id) => {
+    clearTimeout(minuteriesStock.current[id]);
+    delete minuteriesStock.current[id];
+    delete stockEnAttente.current[id];
+    oublierStockLocal(id);
+  };
+
+  const resumeStock = produits.reduce(
+    (acc, p) => {
+      const stock = stockLocal[p.id_prod] ?? p.stock_prod;
+      acc.quantite += stock;
+      acc.valeur += stock * Number(p.prix_prod);
+      if (stock === 0) acc.ruptures += 1;
+      else if (stock <= SEUIL_STOCK_FAIBLE) acc.faibles += 1;
+      return acc;
+    },
+    { quantite: 0, valeur: 0, ruptures: 0, faibles: 0 }
+  );
 
   const ouvrirCreation = () => {
     setProduitEnEdition(null);
@@ -31,6 +104,7 @@ function AdminProduits() {
   };
 
   const ouvrirEdition = (produit) => {
+    annulerStockEnAttente(produit.id_prod);
     setProduitEnEdition(produit);
     setFichierImage(null);
     setErreur('');
@@ -72,6 +146,7 @@ function AdminProduits() {
   const supprimer = async (id) => {
     if (!confirm('Supprimer ce produit ?')) return;
     try {
+      annulerStockEnAttente(id);
       await api.delete(`produits/${id}/`);
       setErreur('');
       charger();
@@ -81,12 +156,60 @@ function AdminProduits() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-        <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gestion des produits</h1>
-        <button onClick={ouvrirCreation} className="bg-[#1E1B2E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
-          Nouveau produit
-        </button>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 mb-5">
+        <div>
+          <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Gestion des produits
+          </h1>
+          <p className="text-sm text-gray-500">
+            Le stock se modifie directement dans le tableau (enregistrement automatique).
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/admin/etats?etat=stock"
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition"
+          >
+            <Printer size={16} /> État du stock
+          </Link>
+          <Link
+            to="/admin/etats"
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition"
+          >
+            <FileText size={16} /> États imprimables
+          </Link>
+          <button onClick={ouvrirCreation} className="bg-[#1E1B2E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
+            Nouveau produit
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-xs text-gray-500">Produits</p>
+          <p className="text-xl font-bold">{produits.length}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-xs text-gray-500">Unités en stock</p>
+          <p className="text-xl font-bold">{resumeStock.quantite}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-xs text-gray-500">Valeur du stock</p>
+          <p className="text-xl font-bold">{formaterPrix(resumeStock.valeur)}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <p className="text-xs text-gray-500">Alertes</p>
+          <p className="text-xl font-bold">
+            <span className={resumeStock.ruptures > 0 ? 'text-red-600' : 'text-gray-400'}>
+              {resumeStock.ruptures} rupture{resumeStock.ruptures > 1 ? 's' : ''}
+            </span>
+            <span className="text-gray-300"> · </span>
+            <span className={resumeStock.faibles > 0 ? 'text-amber-600' : 'text-gray-400'}>
+              {resumeStock.faibles} faible{resumeStock.faibles > 1 ? 's' : ''}
+            </span>
+          </p>
+        </div>
       </div>
 
       {erreur && !modalOuverte && (
@@ -96,7 +219,7 @@ function AdminProduits() {
       )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-[820px]">
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="p-3">Nom</th>
@@ -108,22 +231,64 @@ function AdminProduits() {
             </tr>
           </thead>
           <tbody>
-            {produits.map((p) => (
-              <tr key={p.id_prod} className="border-t border-gray-100">
-                <td className="p-3">{p.nom_prod}</td>
-                <td className="p-3">{formaterPrix(p.prix_prod)}</td>
-                <td className="p-3">{p.stock_prod}</td>
-                <td className="p-3">{p.categorie.nom_cat}</td>
-                <td className="p-3">{p.marque.nom_marq}</td>
-                <td className="p-3 space-x-2">
-                  <button onClick={() => ouvrirEdition(p)} className="text-amber-600 hover:underline">Modifier</button>
-                  <button onClick={() => supprimer(p.id_prod)} className="text-red-600 hover:underline">Supprimer</button>
-                </td>
-              </tr>
-            ))}
+            {produits.map((p) => {
+              const stock = valeurStock(p);
+              const alerte = stock === 0
+                ? <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">Rupture</span>
+                : stock <= SEUIL_STOCK_FAIBLE
+                  ? <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Stock faible</span>
+                  : null;
+
+              return (
+                <tr key={p.id_prod} className="border-t border-gray-100">
+                  <td className="p-3">{p.nom_prod}</td>
+                  <td className="p-3">{formaterPrix(p.prix_prod)}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Retirer une unité de ${p.nom_prod}`}
+                        onClick={() => appliquerStock(p, stock - 1)}
+                        disabled={stock === 0}
+                        className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        aria-label={`Stock de ${p.nom_prod}`}
+                        value={stock}
+                        onChange={(e) => appliquerStock(p, e.target.value)}
+                        className="w-16 px-1 py-1 text-center text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Ajouter une unité de ${p.nom_prod}`}
+                        onClick={() => appliquerStock(p, stock + 1)}
+                        className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {alerte}
+                  </td>
+                  <td className="p-3">{p.categorie.nom_cat}</td>
+                  <td className="p-3">{p.marque.nom_marq}</td>
+                  <td className="p-3 space-x-2">
+                    <button onClick={() => ouvrirEdition(p)} className="text-amber-600 hover:underline">Modifier</button>
+                    <button onClick={() => supprimer(p.id_prod)} className="text-red-600 hover:underline">Supprimer</button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {produits.length === 0 && (
+        <p className="text-center text-gray-500 mt-10">Aucun produit enregistré.</p>
+      )}
 
       {modalOuverte && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setModalOuverte(false)}>
@@ -152,7 +317,7 @@ function AdminProduits() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Stock</label>
-                <input required type="number" value={form.stock_prod} onChange={(e) => setForm({ ...form, stock_prod: e.target.value })}
+                <input required type="number" min="0" value={form.stock_prod} onChange={(e) => setForm({ ...form, stock_prod: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
