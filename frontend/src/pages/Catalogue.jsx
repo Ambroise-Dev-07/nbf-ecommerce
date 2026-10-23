@@ -13,6 +13,8 @@ function Catalogue() {
   const [filtreMarque, setFiltreMarque] = useState('');
   const [recherche, setRecherche] = useState('');
   const [produitSelectionne, setProduitSelectionne] = useState(null);
+  const [message, setMessage] = useState('');
+  const [enAjout, setEnAjout] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +22,12 @@ function Catalogue() {
     api.get('categories/').then((res) => setCategories(res.data));
     api.get('marques/').then((res) => setMarques(res.data));
   }, []);
+
+  useEffect(() => {
+    if (!message) return undefined;
+    const minuterie = setTimeout(() => setMessage(''), 3000);
+    return () => clearTimeout(minuterie);
+  }, [message]);
 
   const produitsFiltres = produits.filter((p) => {
     const matchCat = !filtreCat || p.categorie.id_cat === Number(filtreCat);
@@ -34,8 +42,9 @@ function Catalogue() {
       navigate('/login');
       return;
     }
+    setEnAjout(produit.id_prod);
     try {
-      let panierRes = await api.get('paniers/');
+      const panierRes = await api.get('paniers/');
       let panierId = panierRes.data[0]?.id_pan;
       if (!panierId) {
         const nouveauPanier = await api.post('paniers/');
@@ -46,8 +55,14 @@ function Catalogue() {
         produit_id: produit.id_prod,
         quantite_ligne_pan: 1,
       });
+      setMessage(`${produit.nom_prod} ajouté au panier`);
     } catch (err) {
-      console.error(err);
+      const detail = err.response?.data?.non_field_errors?.[0]
+        || err.response?.data?.detail
+        || `Impossible d'ajouter ${produit.nom_prod} au panier`;
+      setMessage(detail);
+    } finally {
+      setEnAjout(null);
     }
   };
 
@@ -56,6 +71,12 @@ function Catalogue() {
       <h1 className="text-3xl font-bold mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
         Catalogue
       </h1>
+
+      {message && (
+        <div className="mb-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-800">
+          {message}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-3 mb-6">
         <input
@@ -111,10 +132,11 @@ function Catalogue() {
               </span>
               <button
                 onClick={(e) => ajouterAuPanier(produit, e)}
-                disabled={produit.stock_prod === 0}
+                disabled={produit.stock_prod === 0 || enAjout === produit.id_prod}
                 className="mt-auto flex items-center justify-center gap-2 bg-[#1E1B2E] text-white py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] disabled:bg-gray-300 disabled:cursor-not-allowed transition"
               >
-                <ShoppingCart size={16} /> Ajouter
+                <ShoppingCart size={16} />
+                {enAjout === produit.id_prod ? 'Ajout...' : 'Ajouter'}
               </button>
             </div>
           </div>

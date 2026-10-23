@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { extraireErreur } from '../utils/erreur';
 
 function AdminCategories() {
   const [categories, setCategories] = useState([]);
   const [modalOuverte, setModalOuverte] = useState(false);
   const [categorieEnEdition, setCategorieEnEdition] = useState(null);
+  const [erreur, setErreur] = useState('');
   const [form, setForm] = useState({ nom_cat: '', description_cat: '' });
 
   const charger = () => {
@@ -15,12 +17,14 @@ function AdminCategories() {
 
   const ouvrirCreation = () => {
     setCategorieEnEdition(null);
+    setErreur('');
     setForm({ nom_cat: '', description_cat: '' });
     setModalOuverte(true);
   };
 
   const ouvrirEdition = (categorie) => {
     setCategorieEnEdition(categorie);
+    setErreur('');
     setForm({ nom_cat: categorie.nom_cat, description_cat: categorie.description_cat });
     setModalOuverte(true);
   };
@@ -34,9 +38,10 @@ function AdminCategories() {
         await api.post('categories/', form);
       }
       setModalOuverte(false);
+      setErreur('');
       charger();
     } catch (err) {
-      console.error(err);
+      setErreur(extraireErreur(err, "Impossible d'enregistrer la catégorie."));
     }
   };
 
@@ -44,9 +49,12 @@ function AdminCategories() {
     if (!confirm('Supprimer cette catégorie ?')) return;
     try {
       await api.delete(`categories/${id}/`);
+      setErreur('');
       charger();
     } catch (err) {
-      alert('Impossible de supprimer (des produits y sont peut-être liés)');
+      setErreur(
+        extraireErreur(err, 'Impossible de supprimer (des produits y sont peut-être liés).')
+      );
     }
   };
 
@@ -58,6 +66,12 @@ function AdminCategories() {
           Nouvelle catégorie
         </button>
       </div>
+
+      {erreur && !modalOuverte && (
+        <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {erreur}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[500px]">
@@ -87,6 +101,11 @@ function AdminCategories() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setModalOuverte(false)}>
           <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">{categorieEnEdition ? 'Modifier la catégorie' : 'Nouvelle catégorie'}</h2>
+            {erreur && (
+              <div className="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {erreur}
+              </div>
+            )}
             <form onSubmit={enregistrer} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Nom</label>

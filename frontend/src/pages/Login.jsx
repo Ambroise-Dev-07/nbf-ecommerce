@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../services/auth';
+import { extraireErreur } from '../utils/erreur';
 
 function Login() {
   const navigate = useNavigate();
@@ -15,7 +16,13 @@ function Login() {
       await login(username, password);
       navigate('/');
     } catch (err) {
-      setErreur('Identifiants incorrects');
+      if (err.response?.status === 429) {
+        setErreur('Trop de tentatives. Réessaie dans une minute.');
+      } else if (err.response?.status === 401) {
+        setErreur('Identifiants incorrects.');
+      } else {
+        setErreur(extraireErreur(err, 'Connexion impossible pour le moment.'));
+      }
     }
   };
 

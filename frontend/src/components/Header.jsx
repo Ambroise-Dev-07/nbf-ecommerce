@@ -15,9 +15,21 @@ function Header() {
   const [menuOuvert, setMenuOuvert] = useState(false);
 
   useEffect(() => {
-    if (connecte) {
-      getCurrentUser().then((user) => setEstAdmin(user.role_user === 'admin'));
+    if (!connecte) {
+      setEstAdmin(false);
+      return;
     }
+    let annule = false;
+    getCurrentUser()
+      .then((user) => {
+        if (!annule) setEstAdmin(user?.role_user === 'admin');
+      })
+      .catch(() => {
+        if (!annule) setEstAdmin(false);
+      });
+    return () => {
+      annule = true;
+    };
   }, [connecte]);
 
   useEffect(() => {

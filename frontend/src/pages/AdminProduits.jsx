@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Upload as UploadIcon } from 'lucide-react';
 import api from '../services/api';
 import { formaterPrix } from '../utils/format';
+import { extraireErreur } from '../utils/erreur';
 
 function AdminProduits() {
   const [produits, setProduits] = useState([]);
@@ -10,6 +11,7 @@ function AdminProduits() {
   const [modalOuverte, setModalOuverte] = useState(false);
   const [produitEnEdition, setProduitEnEdition] = useState(null);
   const [fichierImage, setFichierImage] = useState(null);
+  const [erreur, setErreur] = useState('');
   const [form, setForm] = useState({ nom_prod: '', description_prod: '', prix_prod: '', stock_prod: '', categorie_id: '', marque_id: '' });
 
   const charger = () => {
@@ -23,6 +25,7 @@ function AdminProduits() {
   const ouvrirCreation = () => {
     setProduitEnEdition(null);
     setFichierImage(null);
+    setErreur('');
     setForm({ nom_prod: '', description_prod: '', prix_prod: '', stock_prod: '', categorie_id: '', marque_id: '' });
     setModalOuverte(true);
   };
@@ -30,6 +33,7 @@ function AdminProduits() {
   const ouvrirEdition = (produit) => {
     setProduitEnEdition(produit);
     setFichierImage(null);
+    setErreur('');
     setForm({
       nom_prod: produit.nom_prod,
       description_prod: produit.description_prod,
@@ -61,14 +65,19 @@ function AdminProduits() {
       setModalOuverte(false);
       charger();
     } catch (err) {
-      console.error(err);
+      setErreur(extraireErreur(err, "Impossible d'enregistrer le produit."));
     }
   };
 
   const supprimer = async (id) => {
     if (!confirm('Supprimer ce produit ?')) return;
-    await api.delete(`produits/${id}/`);
-    charger();
+    try {
+      await api.delete(`produits/${id}/`);
+      setErreur('');
+      charger();
+    } catch (err) {
+      setErreur(extraireErreur(err, 'Impossible de supprimer ce produit.'));
+    }
   };
 
   return (
@@ -79,6 +88,12 @@ function AdminProduits() {
           Nouveau produit
         </button>
       </div>
+
+      {erreur && !modalOuverte && (
+        <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {erreur}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[700px]">
@@ -114,6 +129,11 @@ function AdminProduits() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setModalOuverte(false)}>
           <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold mb-4">{produitEnEdition ? 'Modifier le produit' : 'Nouveau produit'}</h2>
+            {erreur && (
+              <div className="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {erreur}
+              </div>
+            )}
             <form onSubmit={enregistrer} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Nom</label>

@@ -13,13 +13,17 @@ const labels = { en_attente: 'En attente', confirmee: 'Confirmée', annulee: 'An
 function MesCommandes() {
   const [commandes, setCommandes] = useState([]);
   const [chargement, setChargement] = useState(true);
+  const [erreur, setErreur] = useState('');
   const [ouvertes, setOuvertes] = useState({});
 
   useEffect(() => {
-    api.get('commandes/').then((res) => {
-      setCommandes(res.data);
-      setChargement(false);
-    });
+    api.get('commandes/')
+      .then((res) => {
+        setCommandes(res.data);
+        setErreur('');
+      })
+      .catch(() => setErreur('Impossible de charger vos commandes.'))
+      .finally(() => setChargement(false));
   }, []);
 
   const toggle = (id) => {
@@ -30,6 +34,16 @@ function MesCommandes() {
     return (
       <div className="flex justify-center mt-20">
         <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (erreur) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {erreur}
+        </div>
       </div>
     );
   }

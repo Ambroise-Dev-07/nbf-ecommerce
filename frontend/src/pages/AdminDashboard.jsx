@@ -7,10 +7,23 @@ const labelsStatut = { en_attente: 'En attente', confirmee: 'Confirmée', annule
 
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
+  const [erreur, setErreur] = useState('');
 
   useEffect(() => {
-    api.get('statistiques/').then((res) => setStats(res.data));
+    api.get('statistiques/')
+      .then((res) => setStats(res.data))
+      .catch(() => setErreur('Impossible de charger les statistiques.'));
   }, []);
+
+  if (erreur) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {erreur}
+        </div>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (

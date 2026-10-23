@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/auth';
+import { extraireErreur } from '../utils/erreur';
 
 function Register() {
   const navigate = useNavigate();
@@ -18,7 +19,9 @@ function Register() {
       await register(form);
       navigate('/login');
     } catch (err) {
-      setErreur("Erreur lors de l'inscription");
+      setErreur(
+        extraireErreur(err, "Erreur lors de l'inscription. Vérifie tes informations.")
+      );
     }
   };
 

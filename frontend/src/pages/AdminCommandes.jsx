@@ -10,9 +10,15 @@ const couleurs = {
 
 function AdminCommandes() {
   const [commandes, setCommandes] = useState([]);
+  const [erreur, setErreur] = useState('');
 
   const charger = () => {
-    api.get('commandes/').then((res) => setCommandes(res.data));
+    api.get('commandes/')
+      .then((res) => {
+        setCommandes(res.data);
+        setErreur('');
+      })
+      .catch(() => setErreur('Impossible de charger les commandes.'));
   };
 
   useEffect(() => { charger(); }, []);
@@ -20,9 +26,10 @@ function AdminCommandes() {
   const changerStatut = async (id, statut) => {
     try {
       await api.patch(`commandes/${id}/`, { statut_comm: statut });
+      setErreur('');
       charger();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setErreur('Impossible de modifier le statut de cette commande.');
     }
   };
 
@@ -31,6 +38,12 @@ function AdminCommandes() {
       <h1 className="text-3xl font-bold mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
         Gestion des commandes
       </h1>
+
+      {erreur && (
+        <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {erreur}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
@@ -47,7 +60,7 @@ function AdminCommandes() {
             {commandes.map((c) => (
               <tr key={c.id_comm} className="border-t border-gray-100">
                 <td className="p-3">{c.id_comm}</td>
-                <td className="p-3">{c.user}</td>
+                <td className="p-3">{c.user_username || c.user}</td>
                 <td className="p-3">{new Date(c.date_commande).toLocaleDateString()}</td>
                 <td className="p-3">{formaterPrix(c.montant_total_comm)}</td>
                 <td className="p-3">
