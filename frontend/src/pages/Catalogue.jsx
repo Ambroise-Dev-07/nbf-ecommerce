@@ -57,16 +57,16 @@ function Catalogue() {
         Catalogue
       </h1>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6">
         <input
           placeholder="Rechercher un produit"
           onChange={(e) => setRecherche(e.target.value)}
-          className="w-60 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full sm:w-60 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         />
         <select
           value={filtreCat}
           onChange={(e) => setFiltreCat(e.target.value)}
-          className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         >
           <option value="">Toutes les catégories</option>
           {categories.map((c) => (
@@ -76,7 +76,7 @@ function Catalogue() {
         <select
           value={filtreMarque}
           onChange={(e) => setFiltreMarque(e.target.value)}
-          className="w-48 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
         >
           <option value="">Toutes les marques</option>
           {marques.map((m) => (

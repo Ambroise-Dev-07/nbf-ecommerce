@@ -47,7 +47,7 @@ function Panier() {
   if (chargement) {
     return (
       <div className="flex justify-center mt-20">
-        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ function Panier() {
 
       <div className="space-y-3">
         {panier.lignes.map((ligne) => (
-          <div key={ligne.id_ligne_pan} className="bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
+          <div key={ligne.id_ligne_pan} className="bg-white rounded-xl shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <p className="font-semibold">{ligne.produit.nom_prod}</p>
               <p className="text-sm text-gray-500">{formaterPrix(ligne.produit.prix_prod)} / unité</p>
@@ -85,7 +85,7 @@ function Panier() {
                 max={ligne.produit.stock_prod}
                 value={ligne.quantite_ligne_pan}
                 onChange={(e) => modifierQuantite(ligne.id_ligne_pan, Number(e.target.value))}
-                className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <button
                 onClick={() => supprimerLigne(ligne.id_ligne_pan)}
@@ -102,7 +102,7 @@ function Panier() {
         <h2 className="text-xl font-bold mb-3">Total : {formaterPrix(total)}</h2>
         <button
           onClick={passerCommande}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-500 transition"
+          className="w-full sm:w-auto bg-[#1E1B2E] text-white px-6 py-3 rounded-md font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition"
         >
           Passer la commande
         </button>

@@ -29,7 +29,7 @@ function MesCommandes() {
   if (chargement) {
     return (
       <div className="flex justify-center mt-20">
-        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -58,7 +58,7 @@ function MesCommandes() {
 
             <button
               onClick={() => toggle(commande.id_comm)}
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-amber-600 hover:underline"
             >
               {ouvertes[commande.id_comm] ? 'Masquer le détail' : 'Voir le détail'}
             </button>

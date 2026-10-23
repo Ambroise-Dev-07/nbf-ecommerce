@@ -32,8 +32,8 @@ function AdminCommandes() {
         Gestion des commandes
       </h1>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="p-3">N°</th>
@@ -54,7 +54,7 @@ function AdminCommandes() {
                   <select
                     value={c.statut_comm}
                     onChange={(e) => changerStatut(c.id_comm, e.target.value)}
-                    className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${couleurs[c.statut_comm]}`}
+                    className={`px-2 py-1 rounded-md text-xs font-medium border-0 focus:outline-none focus:ring-2 focus:ring-amber-500 ${couleurs[c.statut_comm]}`}
                   >
                     <option value="en_attente">En attente</option>
                     <option value="confirmee">Confirmée</option>

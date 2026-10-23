@@ -12,6 +12,7 @@ import AdminProduits from './pages/AdminProduits';
 import AdminCategories from './pages/AdminCategories';
 import AdminMarques from './pages/AdminMarques';
 import AdminCommandes from './pages/AdminCommandes';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
             <Route path="/admin/marques" element={<AdminRoute><AdminMarques /></AdminRoute>} />
             <Route path="/admin/commandes" element={<AdminRoute><AdminCommandes /></AdminRoute>} />
+            <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           </Routes>
         </main>
         <Footer />

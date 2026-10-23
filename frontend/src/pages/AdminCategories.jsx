@@ -52,15 +52,15 @@ function AdminCategories() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gestion des catégories</h1>
-        <button onClick={ouvrirCreation} className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
+        <button onClick={ouvrirCreation} className="bg-[#1E1B2E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
           Nouvelle catégorie
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="p-3">Nom</th>
@@ -74,7 +74,7 @@ function AdminCategories() {
                 <td className="p-3">{c.nom_cat}</td>
                 <td className="p-3">{c.description_cat}</td>
                 <td className="p-3 space-x-2">
-                  <button onClick={() => ouvrirEdition(c)} className="text-indigo-600 hover:underline">Modifier</button>
+                  <button onClick={() => ouvrirEdition(c)} className="text-amber-600 hover:underline">Modifier</button>
                   <button onClick={() => supprimer(c.id_cat)} className="text-red-600 hover:underline">Supprimer</button>
                 </td>
               </tr>
@@ -91,18 +91,18 @@ function AdminCategories() {
               <div>
                 <label className="block text-sm font-medium mb-1">Nom</label>
                 <input required value={form.nom_cat} onChange={(e) => setForm({ ...form, nom_cat: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea value={form.description_cat} onChange={(e) => setForm({ ...form, description_cat: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setModalOuverte(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 py-2 rounded-md text-sm font-medium transition">
                   Annuler
                 </button>
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
+                <button type="submit" className="flex-1 bg-[#1E1B2E] text-white py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
                   Enregistrer
                 </button>
               </div>

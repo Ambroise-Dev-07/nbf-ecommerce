@@ -23,7 +23,7 @@ function Register() {
   };
 
   return (
-    <div className="max-w-sm mx-auto mt-20 px-4">
+    <div className="max-w-sm mx-auto mt-10 sm:mt-20 px-4">
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h1 className="text-xl font-bold mb-4">Inscription</h1>
         {erreur && <p className="text-red-600 text-sm mb-3">{erreur}</p>}
@@ -35,7 +35,7 @@ function Register() {
               value={form.username}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <div>
@@ -46,7 +46,7 @@ function Register() {
               value={form.email}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <div>
@@ -58,7 +58,7 @@ function Register() {
               onChange={handleChange}
               required
               minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <div>
@@ -67,18 +67,18 @@ function Register() {
               name="telephone_user"
               value={form.telephone_user}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-md font-medium hover:bg-indigo-500 transition"
+            className="w-full bg-[#1E1B2E] text-white py-2 rounded-md font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition"
           >
             S'inscrire
           </button>
         </form>
         <p className="mt-4 text-sm text-center">
-          Déjà un compte ? <Link to="/login" className="text-indigo-600 hover:underline">Se connecter</Link>
+          Déjà un compte ? <Link to="/login" className="text-amber-600 hover:underline">Se connecter</Link>
         </p>
       </div>
     </div>

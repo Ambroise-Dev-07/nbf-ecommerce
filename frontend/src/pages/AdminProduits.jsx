@@ -73,15 +73,15 @@ function AdminProduits() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <h1 className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Gestion des produits</h1>
-        <button onClick={ouvrirCreation} className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
-          ajouter un produit
+        <button onClick={ouvrirCreation} className="bg-[#1E1B2E] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
+          Nouveau produit
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-gray-50 text-left">
             <tr>
               <th className="p-3">Nom</th>
@@ -101,7 +101,7 @@ function AdminProduits() {
                 <td className="p-3">{p.categorie.nom_cat}</td>
                 <td className="p-3">{p.marque.nom_marq}</td>
                 <td className="p-3 space-x-2">
-                  <button onClick={() => ouvrirEdition(p)} className="text-indigo-600 hover:underline">Modifier</button>
+                  <button onClick={() => ouvrirEdition(p)} className="text-amber-600 hover:underline">Modifier</button>
                   <button onClick={() => supprimer(p.id_prod)} className="text-red-600 hover:underline">Supprimer</button>
                 </td>
               </tr>
@@ -118,27 +118,27 @@ function AdminProduits() {
               <div>
                 <label className="block text-sm font-medium mb-1">Nom</label>
                 <input required value={form.nom_prod} onChange={(e) => setForm({ ...form, nom_prod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea value={form.description_prod} onChange={(e) => setForm({ ...form, description_prod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Prix</label>
                 <input required type="number" value={form.prix_prod} onChange={(e) => setForm({ ...form, prix_prod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Stock</label>
                 <input required type="number" value={form.stock_prod} onChange={(e) => setForm({ ...form, stock_prod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Catégorie</label>
                 <select required value={form.categorie_id} onChange={(e) => setForm({ ...form, categorie_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                   <option value="">Choisir...</option>
                   {categories.map((c) => <option key={c.id_cat} value={c.id_cat}>{c.nom_cat}</option>)}
                 </select>
@@ -146,7 +146,7 @@ function AdminProduits() {
               <div>
                 <label className="block text-sm font-medium mb-1">Marque</label>
                 <select required value={form.marque_id} onChange={(e) => setForm({ ...form, marque_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                   <option value="">Choisir...</option>
                   {marques.map((m) => <option key={m.id_marq} value={m.id_marq}>{m.nom_marq}</option>)}
                 </select>
@@ -163,7 +163,7 @@ function AdminProduits() {
                 <button type="button" onClick={() => setModalOuverte(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 py-2 rounded-md text-sm font-medium transition">
                   Annuler
                 </button>
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-md text-sm font-medium hover:bg-indigo-500 transition">
+                <button type="submit" className="flex-1 bg-[#1E1B2E] text-white py-2 rounded-md text-sm font-medium hover:bg-amber-500 hover:text-[#1E1B2E] transition">
                   Enregistrer
                 </button>
               </div>
