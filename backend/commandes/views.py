@@ -3,6 +3,11 @@ from .models import Panier, LignePanier, Commande, LigneDeCommande
 from .serializers import PanierSerializer, LignePanierSerializer, CommandeSerializer, LigneDeCommandeSerializer
 from rest_framework.exceptions import ValidationError
 from .models import Panier
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Sum, Count
+from catalogue.models import Produit
+from utilisateurs.models import User
 
 class PanierViewSet(viewsets.ModelViewSet):
     serializer_class = PanierSerializer
@@ -76,3 +81,38 @@ class LigneDeCommandeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return LigneDeCommande.objects.filter(commande__user=self.request.user)
+
+
+
+class StatistiquesView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role_user != 'admin':
+            return Response({'detail': 'Accès réservé aux administrateurs.'}, status=403)
+
+        total_produits = Produit.objects.count()
+        total_clients = User.objects.filter(role_user='client').count()
+        total_commandes = Commande.objects.count()
+        chiffre_affaires = Commande.objects.filter(statut_comm='confirmee').aggregate(
+            total=Sum('montant_total_comm')
+        )['total'] or 0
+
+        commandes_par_statut = list(
+            Commande.objects.values('statut_comm').annotate(total=Count('id_comm'))
+        )
+
+        top_produits = list(
+            LigneDeCommande.objects.values('produit__nom_prod').annotate(
+                quantite_vendue=Sum('quantite_ligne_comm')
+            ).order_by('-quantite_vendue')[:5]
+        )
+
+        return Response({
+            'total_produits': total_produits,
+            'total_clients': total_clients,
+            'total_commandes': total_commandes,
+            'chiffre_affaires': chiffre_affaires,
+            'commandes_par_statut': commandes_par_statut,
+            'top_produits': top_produits,
+        })
