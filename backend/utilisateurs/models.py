@@ -1,6 +1,7 @@
-from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import AbstractUser
 from django.db import models
+
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -18,31 +19,15 @@ class User(AbstractUser):
         return authenticate(username=username, password=password)
 
     def ajouter_au_panier_user(self, produit, quantite=1):
-        from commandes.models import Panier, LignePanier
+        from commandes.models import LignePanier, Panier
+
         panier, _ = Panier.objects.get_or_create(user=self)
         ligne, created = LignePanier.objects.get_or_create(
-            panier=panier, produit=produit,
-            defaults={'quantite_ligne_pan': quantite}
+            panier=panier,
+            produit=produit,
+            defaults={'quantite_ligne_pan': quantite},
         )
         if not created:
             ligne.quantite_ligne_pan += quantite
-            ligne.save()
+            ligne.save(update_fields=['quantite_ligne_pan'])
         return ligne
-
-    def passer_commande_user(self):
-        from commandes.models import Panier, Commande, LigneDeCommande
-        panier = Panier.objects.get(user=self)
-        commande = Commande.objects.create(user=self, montant_total_comm=0, statut_comm='en_attente')
-        total = 0
-        for ligne_pan in panier.lignes.all():
-            LigneDeCommande.objects.create(
-                commande=commande,
-                produit=ligne_pan.produit,
-                quantite_ligne_comm=ligne_pan.quantite_ligne_pan,
-                prix_unitaire=ligne_pan.produit.prix_prod,
-            )
-            total += ligne_pan.quantite_ligne_pan * ligne_pan.produit.prix_prod
-        commande.montant_total_comm = total
-        commande.save()
-        panier.lignes.all().delete()
-        return commande

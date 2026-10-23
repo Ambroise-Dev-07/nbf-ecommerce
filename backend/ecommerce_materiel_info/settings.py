@@ -1,8 +1,13 @@
+from datetime import timedelta
 from pathlib import Path
-from decouple import config
 
-PAYGATE_ID = config('PAYGATE_ID')
-PAYGATE_SECRET = config('PAYGATE_SECRET')
+from decouple import Csv, config
+
+PAYGATE_ID = config('PAYGATE_ID', default='')
+PAYGATE_SECRET = config('PAYGATE_SECRET', default='')
+PAYGATE_PAY_URL = config('PAYGATE_PAY_URL', default='https://paygateglobal.com/api/v1/pay')
+PAYGATE_STATUS_URL = config('PAYGATE_STATUS_URL', default='https://paygateglobal.com/api/v2/status')
+PAYGATE_TIMEOUT = config('PAYGATE_TIMEOUT', default=10, cast=int)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,9 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1',
+    cast=Csv(),
+)
 
 AUTH_USER_MODEL = 'utilisateurs.User'
 
@@ -49,9 +58,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",   # adresse par défaut de Vite (React)
-]
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default=(
+        'http://localhost:5173,http://127.0.0.1:5173,'
+        'http://localhost:4173,http://127.0.0.1:4173'
+    ),
+    cast=Csv(),
+)
 
 ROOT_URLCONF = 'ecommerce_materiel_info.urls'
 
@@ -74,6 +88,25 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '300/hour',
+        'user': '3000/hour',
+        'login': '10/minute',
+        'register': '10/hour',
+    },
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': True,
 }
 
 WSGI_APPLICATION = 'ecommerce_materiel_info.wsgi.application'
@@ -115,7 +148,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'Fr-fr'
+LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'UTC'
 
