@@ -59,10 +59,11 @@ function Catalogue() {
   }, [message]);
 
   const produitsFiltres = produits.filter((p) => {
+    const matchStock = p.stock_prod > 0;
     const matchCat = !filtreCat || p.categorie.id_cat === Number(filtreCat);
     const matchMarque = !filtreMarque || p.marque.id_marq === Number(filtreMarque);
     const matchRecherche = p.nom_prod.toLowerCase().includes(recherche.toLowerCase());
-    return matchCat && matchMarque && matchRecherche;
+    return matchStock && matchCat && matchMarque && matchRecherche;
   });
 
   const ligneDuProduit = (produitId) =>
@@ -213,12 +214,8 @@ function Catalogue() {
                   {produit.nom_prod}
                 </h3>
                 <p className="text-lg font-bold text-amber-600 mb-2">{formaterPrix(produit.prix_prod)}</p>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full w-fit mb-3 ${
-                    produit.stock_prod > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}
-                >
-                  {produit.stock_prod > 0 ? `Stock: ${produit.stock_prod}` : 'Rupture'}
+                <span className="text-xs px-2 py-1 rounded-full w-fit mb-3 bg-green-100 text-green-700">
+                  Stock: {produit.stock_prod}
                 </span>
 
                 <div
@@ -279,6 +276,12 @@ function Catalogue() {
           );
         })}
       </div>
+
+      {produitsFiltres.length === 0 && (
+        <p className="text-center text-gray-500 mt-16">
+          Aucun produit disponible pour le moment.
+        </p>
+      )}
 
       {produitSelectionne && (
         <div
