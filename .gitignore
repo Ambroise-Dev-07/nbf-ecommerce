@@ -1,5 +1,25 @@
+# Dépendances
 node_modules/
-package.json
-package-lock.json
+
+# Fichiers npm parasites à la racine (projet npm réel = frontend/)
+/package.json
+/package-lock.json
+
+# IDE
 .idea/
+
+# Artefacts locaux
+*.backup
+*.log
+.env
+.env.*
+!.env.example
+dist/
+frontend/dist/
 backend/produits/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
